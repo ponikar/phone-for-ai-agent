@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PhoneController</string>
+    <string name="accessibility_service_description">PhoneController accessibility service for AI agent control. Required for UI interaction commands.</string>
+    <string name="accessibility_status_label">Accessibility Service:</string>
+    <string name="connection_status_label">Connection:</string>
+    <string name="server_url_hint">ws://10.0.2.2:8080</string>
+    <string name="open_accessibility_settings">Open Accessibility Settings</string>
+    <string name="connect">Connect to Server</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="connected">Connected</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="connecting">Connecting…</string>
+    <string name="enabled">Enabled</string>
+    <string name="disabled">Disabled</string>
+</resources>

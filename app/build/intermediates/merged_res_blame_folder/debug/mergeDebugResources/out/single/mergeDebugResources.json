@@ -1,0 +1,10 @@
+[
+    {
+        "merged": "com.phonecontroller.app-debug-33:/layout_activity_main.xml.flat",
+        "source": "com.phonecontroller.app-main-35:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.phonecontroller.app-debug-33:/xml_accessibility_service_config.xml.flat",
+        "source": "com.phonecontroller.app-main-35:/xml/accessibility_service_config.xml"
+    }
+]

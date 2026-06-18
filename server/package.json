@@ -1,0 +1,12 @@
+{
+  "name": "phonecontroller-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Test WebSocket server for PhoneController",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
