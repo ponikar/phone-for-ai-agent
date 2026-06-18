@@ -1,5 +1,7 @@
 # AI Skill: Phone Controller
 
+> ⚠️ **WARNING:** This is an experimental project. It gives remote control of your phone over the network. Use it **only on trusted local WiFi networks**. The authors take **no responsibility** for any data loss, privacy breaches, unintended actions, or misuse. Sensitive information (passwords, messages, photos, banking details, etc.) may be exposed to the AI agent or the network. Use at your own risk. Disable the Accessibility Service and uninstall the app when not in use.
+
 This skill teaches an AI agent how to control an Android phone using the PhoneController app. You can tap, swipe, navigate, read the screen, and find+click elements — all through WebSocket commands.
 
 ## Prerequisites

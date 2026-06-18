@@ -2,6 +2,8 @@
 
 > **Experimental** — Give your AI agent direct access to your Android phone, just like a human would use it.
 
+> ⚠️ **WARNING:** This is an experimental project. It gives remote control of your phone over the network. Use it **only on trusted local WiFi networks**. The authors take **no responsibility** for any data loss, privacy breaches, unintended actions, or misuse. Sensitive information (passwords, messages, photos, banking details, etc.) may be exposed to the AI agent or the network. Use at your own risk. Disable the Accessibility Service and uninstall the app when not in use.
+
 This is a native Android app + Node.js server that lets an AI agent (or any laptop-based script) control a phone through WebSocket commands — tapping, swiping, navigating, reading the UI, and more.
 
 Instead of brittle automation frameworks or screen scraping, it uses Android's **AccessibilityService** to interact with apps the same way a human does: by reading the UI tree and dispatching real gestures.
