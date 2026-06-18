@@ -261,16 +261,30 @@ Common error codes:
 
 ### Pattern A: Open an app and do something
 
+**Fastest way (direct launch via ADB):**
+
 ```
-1. get_ui_tree → see home screen
-2. If app not visible, swipe to find it or use home first
-3. click_text "YouTube" → opens YouTube
-4. get_ui_tree → see YouTube home
-5. click_description "Search" → activates search
-6. get_ui_tree → see search field is focused
-7. (type text via ADB: input text "beauty and the beach")
-8. get_ui_tree → see search results
-9. click_text or click_description → select a result
+1. adb shell am start -n com.google.android.youtube/.app.honeycomb.Shell$HomeActivity
+2. sleep 3
+3. get_ui_tree → see YouTube home
+4. click_description "Search" → activates search
+5. get_ui_tree → see search field is focused
+6. adb shell input text "beauty and the beat"
+7. adb shell input keyevent 66  (Enter)
+8. sleep 3
+9. get_ui_tree → see search results
+10. click_text or click_description → select a result
+```
+
+**Visual way (no ADB, all through WebSocket):**
+
+```
+1. home → go to home screen
+2. get_ui_tree → see home screen
+3. If app not visible, open app drawer (look for "Apps" or grid icon)
+4. swipe or scroll to find the app
+5. click_text "YouTube" → opens YouTube
+6. continue from step 3 above
 ```
 
 ### Pattern B: Navigate an app
@@ -309,9 +323,175 @@ adb shell input text "your text here"
 adb shell input keyevent 66  # Enter key
 ```
 
+### Pattern F: Direct app launch (avoid scrolling through home screens)
+
+Instead of swiping through pages of apps, use ADB to launch any app directly by its package name:
+
+```bash
+# Find package name first
+adb shell pm list packages | grep -i youtube
+# Output: package:com.google.android.youtube
+
+# Launch directly
+adb shell am start -n com.google.android.youtube/.app.honeycomb.Shell\$HomeActivity
+```
+
+This works from any screen and is much faster than finding and tapping the icon.
+
+### Pattern G: Open an app from the app drawer
+
+If you want to navigate visually instead:
+
+```
+1. home → go to home screen
+2. get_ui_tree → look for app drawer icon (usually a grid/dots icon at bottom-center, often labeled with a description like "Apps" or showing 6 dots)
+3. click_description "Apps" → opens drawer
+4. get_ui_tree → see app grid. Scroll if needed
+5. click_text "YouTube" → launches app
+```
+
+### Pattern H: Switch between recent apps (double-tap recents)
+
+```
+1. Tap the recent apps button (on gesture phones: swipe up and hold)
+   → send: {"id":"recent","type":"swipe","x1":360,"y1":1600,"x2":360,"y2":800,"duration":200}
+2. Tap a recent app card to switch to it
+3. Or keep swiping to find the right one
+```
+
 ---
 
-## 8. Tips
+## 8. Smart Navigation & Efficiency Tricks
+
+### 8.1 Use Google Search / App Search to launch anything instantly
+
+Most Android phones have a Google Search bar on the home screen. Use it:
+
+```
+1. home → go home
+2. get_ui_tree → find the search bar (usually at top with text "Search" or "Google")
+3. click_text "Search" or click_description "Google"
+4. Wait for search field to get focused
+5. ADB: adb shell input text "Settings"
+6. ADB: adb shell input keyevent 66 (Enter)
+7. get_ui_tree → see search results with app + web results
+8. click_text "Settings" to open
+```
+
+This avoids scrolling through pages of home screen apps.
+
+### 8.2 Pull down notifications / Quick Settings
+
+```json
+{"id":"notif","type":"swipe","x1":360,"y1":50,"x2":360,"y2":800,"duration":300}
+```
+
+- **Short swipe from top** → notification panel
+- **Two-finger swipe or longer swipe from top** → Quick Settings toggles (WiFi, Bluetooth, Flashlight, etc.)
+- **Swipe up from middle of screen** → dismiss the panel
+
+### 8.3 Use `back` strategically
+
+- `back` dismisses keyboards, closes menus, and navigates to previous screen
+- Spam `back` 2-3 times to exit an app entirely
+- Use `back` after typing to dismiss the keyboard before taking a screenshot/UI tree
+
+### 8.4 Detect loading, errors, and empty states
+
+When you `get_ui_tree` and see these patterns, the app is probably loading (wait and retry):
+
+- Text like "Loading...", "Please wait", a spinning indicator
+- Very few nodes returned (just a skeleton screen)
+- No clickable elements on screen
+
+When you see these, something went wrong:
+
+- "No internet connection", "Something went wrong", "Retry"
+- "Network error", "Can't reach server"
+- An OK/Cancel dialog with an error message
+
+### 8.5 Target scrolls precisely using the UI tree
+
+When you `get_ui_tree`, look for scrollable containers:
+
+```json
+{
+  "className": "android.widget.ScrollView",
+  "bounds": [0, 200, 720, 1500]
+}
+```
+
+Or:
+
+```json
+{
+  "className": "android.support.v7.widget.RecyclerView",
+  "bounds": [0, 200, 720, 1500]
+}
+```
+
+Use the `bounds` of the scrollable area to aim your swipe:
+
+```
+swipe inside the scrollable bounds to avoid triggering system gestures
+{"id":"scroll","type":"swipe","x1":360,"y1":1300,"x2":360,"y2":400,"duration":400}
+```
+
+### 8.6 Short vs long swipes
+
+- **Short swipe (200-400px)** → small scroll, move by 1-2 items
+- **Long swipe (800-1200px)** → large scroll, move by half a screen
+- **Very fast swipe (duration: 100-200)** → fling, continues scrolling
+- **Slow swipe (duration: 800-1000)** → controlled drag, stops when you lift
+
+### 8.7 Handle bottom navigation bars
+
+Many apps have a bottom bar with tabs like Home, Search, Create, Notifications, Profile. Look for:
+
+```json
+{
+  "viewId": "com.instagram.android:id/bottom_bar",
+  "className": "android.widget.HorizontalScrollView"
+}
+```
+
+Or look for Button elements at the bottom of the screen with descriptions like "Home", "Search", etc. Tapping these is faster than scrolling.
+
+### 8.8 Battery and performance awareness
+
+- Each `get_ui_tree` call is cheap — use it liberally (5-10 times per task is normal)
+- Each `swipe` triggers animations — wait 2-3 seconds after swiping
+- Aggressive rapid commands can lag the phone. Slow down if responses get delayed
+- If the phone is off or screen is locked, commands will fail. Use ADB to wake: `adb shell input keyevent 26`
+
+### 8.9 Combo moves (fast patterns)
+
+```
+# Open YouTube and search in one sequence:
+1. adb shell am start -n com.google.android.youtube/.app.honeycomb.Shell$HomeActivity
+2. sleep 3
+3. get_ui_tree
+4. click_description "Search"
+5. sleep 2
+6. adb shell input text "despacito"
+7. adb shell input keyevent 66
+8. sleep 3
+9. get_ui_tree
+10. click_text or tap to select a video
+```
+
+### 8.10 Reading screen that requires scrolling
+
+Some screens are taller than the display. When `get_ui_tree` returns nodes but you don't see what you're looking for:
+
+1. Check if there's a ScrollView or RecyclerView in the tree — that means there's more content below
+2. Do a swipe up inside the scrollable area
+3. Call `get_ui_tree` again — new nodes should appear
+4. Repeat until you find the target or the tree stops changing (end of list)
+
+---
+
+## 9. Tips
 
 - **Always `get_ui_tree` before acting** — you need to know the current screen state
 - **Wait 1-3 seconds between commands** for animations to settle
@@ -319,11 +499,13 @@ adb shell input keyevent 66  # Enter key
 - **Use unique identifiers** — `click_text` with common words like "OK" might match the wrong element. Prefer longer, more specific strings
 - **Coordinate system** — (0,0) is top-left. x increases right, y increases down
 - **The `get_ui_tree` is limited to 300 nodes** — very complex screens may be truncated
-- **`swipe` coordinates are start→end**, so `swipe up` goes from low y to high y (wait — actually the Y axis increases downward, so swipe up would be y1 > y2, e.g., y1:1600 → y2:400)
+- **`swipe` coordinates are start→end**. Y axis increases downward, so swipe up: y1=1400 → y2=400, swipe down: y1=400 → y2=1400
+- **Prefer `click_text` and `click_description` over tap with coordinates** — they survive screen re-layouts and different screen sizes
+- **Use coordinates only as fallback** — when the element has no text, no description, and no unique viewId
 
 ---
 
-## 9. Typical Startup Sequence
+## 10. Typical Startup Sequence
 
 ```bash
 # 1. Start the server

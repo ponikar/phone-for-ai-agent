@@ -118,6 +118,10 @@ node send.js '{"id":"1","type":"tap","x":500,"y":1200}'
 └── build.gradle.kts
 ```
 
+## AI Agent Guide
+
+Read `AI_SKILL.md` — a comprehensive skill file that teaches AI agents how to use this tool efficiently, with smart navigation tricks, command reference, and detailed patterns.
+
 ## Safety
 
 - Commands only execute while Accessibility Service is enabled
