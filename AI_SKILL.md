@@ -194,6 +194,83 @@ Error: `{"id":"6","ok":false,"message":"no clickable node found with text: Searc
 
 Same as `click_text` but matches against `contentDescription`. Use this for icons and image buttons that don't have visible text.
 
+### 4.8 `type` — Type text into a focused input field
+
+```json
+{"id":"8","type":"type","text":"hello world"}
+```
+
+Types text into the currently focused input field. Works on most text fields (search bars, input forms, etc.). Uses `ACTION_SET_TEXT` first, falls back to clipboard paste.
+
+**Important:** The target text field must already be focused (tap it first, or use `click_text`/`click_description` to focus it). After typing, you may need to press Enter to submit.
+
+Response: `{"id":"8","ok":true,"message":"typed text: hello world"}`
+Error: `{"id":"8","ok":false,"message":"no focused input field found"}`
+
+### 4.9 `wait` — Pause between commands
+
+```json
+{"id":"9","type":"wait","ms":2000}
+```
+
+Pauses execution for `ms` milliseconds before responding. Use this instead of external `sleep` commands. The server stays responsive during the wait.
+
+Response: `{"id":"9","ok":true,"message":"waited 2000ms"}`
+
+### 4.10 `long_press` — Press and hold
+
+```json
+{"id":"10","type":"long_press","x":500,"y":1000,"duration":800}
+```
+
+Holds a tap at coordinates for `duration` milliseconds (default: 800). Useful for context menus, app icons on home screen, text selection, etc.
+
+Response: `{"id":"10","ok":true,"message":"long_press executed at (500, 1000) for 800ms"}`
+
+### 4.11 `keyevent` — Send system key events
+
+```json
+{"id":"11","type":"keyevent","key":3}
+```
+
+Sends a system-level global action. Uses the key value directly as the global action ID.
+
+| Action | Code | Description |
+|---|---|---|
+| `BACK` | `1` | Navigate back |
+| `HOME` | `2` | Go to home screen |
+| `RECENTS` | `3` | Open recent apps overview |
+| `NOTIFICATIONS` | `4` | Pull down notification shade |
+| `QUICK_SETTINGS` | `6` | Open quick settings toggles |
+| `POWER_DIALOG` | `7` | Show power off/restart dialog |
+| `LOCK_SCREEN` | `9` | Lock the phone |
+| `SCREENSHOT` | `10` | Take a screenshot (saves to gallery) |
+
+Response: `{"id":"11","ok":true,"message":"keyevent RECENTS executed"}`
+Error: `{"id":"11","ok":false,"message":"keyevent 5 not supported. Keys: 1=BACK, 2=HOME, 3=RECENTS..."}`
+
+### 4.12 `get_state` — Get current app state
+
+```json
+{"id":"12","type":"get_state"}
+```
+
+Returns information about the current foreground app:
+
+```json
+{
+  "id": "12",
+  "ok": true,
+  "message": "state_returned",
+  "state": {
+    "package": "com.google.android.youtube",
+    "window": "android.widget.FrameLayout"
+  }
+}
+```
+
+Useful for checking what app is currently active before deciding what to do.
+
 ---
 
 ## 5. Reading the Screen
@@ -261,17 +338,17 @@ Common error codes:
 
 ### Pattern A: Open an app and do something
 
-**Fastest way (direct launch via ADB):**
+**Fastest way (direct launch via ADB + type command):**
 
 ```
 1. adb shell am start -n com.google.android.youtube/.app.honeycomb.Shell$HomeActivity
-2. sleep 3
+2. wait 3000
 3. get_ui_tree → see YouTube home
 4. click_description "Search" → activates search
-5. get_ui_tree → see search field is focused
-6. adb shell input text "beauty and the beat"
-7. adb shell input keyevent 66  (Enter)
-8. sleep 3
+5. wait 1500
+6. type "beauty and the beat"  → {"id":"8","type":"type","text":"beauty and the beat"}
+7. Tap a search suggestion or press Enter via ADB: adb shell input keyevent 66
+8. wait 3000
 9. get_ui_tree → see search results
 10. click_text or click_description → select a result
 ```
@@ -316,7 +393,17 @@ Common error codes:
 
 ### Pattern E: Typing text
 
-The app doesn't have a built-in "type" command. Use ADB as a fallback when the target text field is focused:
+Use the `type` command to send text into a focused input field:
+
+```
+1. click_description "Search" → activates search bar
+2. wait 1000 → let animation finish
+3. type "hello world" → {"id":"8","type":"type","text":"hello world"}
+4. wait 500
+5. Tap the search/keyboard enter button in the UI, or use ADB: adb shell input keyevent 66
+```
+
+If the `type` command fails (some custom text fields don't support it), fall back to ADB:
 
 ```bash
 adb shell input text "your text here"

@@ -15,5 +15,7 @@ data class CommandWrapper(
     val y2: Int? = null,
     val duration: Int? = null,
     val text: String? = null,
-    val description: String? = null
+    val description: String? = null,
+    val ms: Int? = null,
+    val key: Int? = null
 )

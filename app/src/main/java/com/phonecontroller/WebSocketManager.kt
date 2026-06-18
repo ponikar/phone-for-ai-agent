@@ -1,5 +1,7 @@
 package com.phonecontroller
 
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import com.phonecontroller.models.CommandResponse
 import kotlinx.serialization.encodeToString
@@ -33,6 +35,7 @@ class WebSocketManager(
 
     private var webSocket: WebSocket? = null
     private var commandParser: CommandParser? = null
+    private val handler = Handler(Looper.getMainLooper())
 
     fun connect() {
         disconnect()
@@ -103,6 +106,14 @@ class WebSocketManager(
         }
 
         val cmd = parseResult.getOrThrow()
+
+        if (cmd.type == "wait") {
+            handler.postDelayed({
+                sendResponse(CommandResponse(id = cmd.id, ok = true, message = "waited ${cmd.ms}ms"))
+            }, cmd.ms!!.toLong())
+            return
+        }
+
         val accessibilityService = AccessibilityController.service
 
         if (accessibilityService == null) {
@@ -151,6 +162,26 @@ class WebSocketManager(
                 accessibilityService.clickByDescription(cmd.description!!) { success, msg ->
                     sendResponse(CommandResponse(id = cmd.id, ok = success, message = msg))
                 }
+            }
+            "type" -> {
+                accessibilityService.executeType(cmd.text!!) { success, msg ->
+                    sendResponse(CommandResponse(id = cmd.id, ok = success, message = msg))
+                }
+            }
+            "long_press" -> {
+                val duration = cmd.duration ?: 800
+                accessibilityService.executeLongPress(cmd.x!!, cmd.y!!, duration) { success, msg ->
+                    sendResponse(CommandResponse(id = cmd.id, ok = success, message = msg))
+                }
+            }
+            "keyevent" -> {
+                accessibilityService.executeKeyEvent(cmd.key!!) { success, msg ->
+                    sendResponse(CommandResponse(id = cmd.id, ok = success, message = msg))
+                }
+            }
+            "get_state" -> {
+                val state = accessibilityService.getCurrentState()
+                sendResponse(CommandResponse(id = cmd.id, ok = true, message = "state_returned", state = state))
             }
             else -> {
                 sendResponse(

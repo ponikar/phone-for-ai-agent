@@ -2,13 +2,18 @@ package com.phonecontroller
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.graphics.Path
 import android.graphics.Rect
 import android.os.Build
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.KeyEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.phonecontroller.models.UiNode
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -202,6 +207,116 @@ class PhoneAccessibilityService : AccessibilityService() {
                 callback(false, "clickByDescription error: ${e.message}")
             }
         }
+    }
+
+    fun executeType(text: String, callback: (Boolean, String) -> Unit) {
+        mainHandler.post {
+            try {
+                val root = rootInActiveWindow
+                if (root == null) {
+                    callback(false, "no active window")
+                    return@post
+                }
+                val focused = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
+                if (focused == null) {
+                    callback(false, "no focused input field found")
+                    return@post
+                }
+                val args = Bundle()
+                args.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
+                val result = focused.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
+                if (result) {
+                    callback(true, "typed text: $text")
+                } else {
+                    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(ClipData.newPlainText("type", text))
+                    val pasted = focused.performAction(AccessibilityNodeInfo.ACTION_PASTE)
+                    if (pasted) {
+                        callback(true, "typed text (paste fallback): $text")
+                    } else {
+                        callback(false, "type failed: SET_TEXT and PASTE both failed")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "executeType error", e)
+                callback(false, "type error: ${e.message}")
+            }
+        }
+    }
+
+    fun executeLongPress(x: Int, y: Int, durationMs: Int = 800, callback: (Boolean, String) -> Unit) {
+        mainHandler.post {
+            try {
+                val path = Path().apply { moveTo(x.toFloat(), y.toFloat()) }
+                val gesture = GestureDescription.Builder()
+                    .addStroke(GestureDescription.StrokeDescription(path, 0, durationMs.toLong()))
+                    .build()
+                val result = dispatchGesture(gesture, object : GestureResultCallback() {
+                    override fun onCompleted(gestureDescription: GestureDescription?) {
+                        callback(true, "long_press executed at ($x, $y) for ${durationMs}ms")
+                    }
+                    override fun onCancelled(gestureDescription: GestureDescription?) {
+                        callback(false, "long_press cancelled at ($x, $y)")
+                    }
+                }, null)
+                if (!result) {
+                    callback(false, "long_press dispatch failed")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "long_press error", e)
+                callback(false, "long_press error: ${e.message}")
+            }
+        }
+    }
+
+    fun executeKeyEvent(key: Int, callback: (Boolean, String) -> Unit) {
+        mainHandler.post {
+            try {
+                val globalAction = when (key) {
+                    1 -> GLOBAL_ACTION_BACK
+                    2 -> GLOBAL_ACTION_HOME
+                    3 -> GLOBAL_ACTION_RECENTS
+                    4 -> GLOBAL_ACTION_NOTIFICATIONS
+                    6 -> GLOBAL_ACTION_QUICK_SETTINGS
+                    7 -> GLOBAL_ACTION_POWER_DIALOG
+                    9 -> GLOBAL_ACTION_LOCK_SCREEN
+                    10 -> GLOBAL_ACTION_TAKE_SCREENSHOT
+                    else -> -1
+                }
+                if (globalAction < 0) {
+                    callback(false, "keyevent $key not supported. Keys: 1=BACK, 2=HOME, 3=RECENTS, 4=NOTIFICATIONS, 6=QUICK_SETTINGS, 7=POWER, 9=LOCK, 10=SCREENSHOT")
+                    return@post
+                }
+                val result = performGlobalAction(globalAction)
+                val label = when (key) {
+                    1 -> "BACK"; 2 -> "HOME"; 3 -> "RECENTS"; 4 -> "NOTIFICATIONS"
+                    6 -> "QUICK_SETTINGS"; 7 -> "POWER_DIALOG"; 9 -> "LOCK_SCREEN"; 10 -> "SCREENSHOT"
+                    else -> "$key"
+                }
+                if (result) {
+                    callback(true, "keyevent $label executed")
+                } else {
+                    callback(false, "keyevent $label failed")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "keyevent error", e)
+                callback(false, "keyevent error: ${e.message}")
+            }
+        }
+    }
+
+    fun getCurrentState(): Map<String, String> {
+        val state = mutableMapOf<String, String>()
+        try {
+            val root = rootInActiveWindow
+            if (root != null) {
+                state["package"] = root.packageName?.toString() ?: "unknown"
+                state["window"] = root.className?.toString() ?: "unknown"
+            }
+        } catch (_: Exception) {
+            state["package"] = "unknown"
+        }
+        return state
     }
 
     private fun findClickableNode(

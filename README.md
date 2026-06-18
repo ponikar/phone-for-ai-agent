@@ -100,6 +100,11 @@ node send.js '{"id":"1","type":"tap","x":500,"y":1200}'
 | `get_ui_tree` | — | Dump current screen's node hierarchy |
 | `click_text` | `text` | Click the first node matching visible text |
 | `click_description` | `description` | Click the first node matching content description |
+| `type` | `text` | Type text into the focused input field |
+| `wait` | `ms` | Pause for N milliseconds |
+| `long_press` | `x`, `y`, `duration` | Press and hold at coordinates |
+| `keyevent` | `key` | Send system key event (1=BACK, 2=HOME, 3=RECENTS, etc.) |
+| `get_state` | — | Get current foreground app info |
 
 ## Project Structure
 
@@ -125,7 +130,7 @@ Read `AI_SKILL.md` — a comprehensive skill file that teaches AI agents how to 
 ## Safety
 
 - Commands only execute while Accessibility Service is enabled
-- Only 7 defined command types are accepted — no arbitrary execution
+- Only 12 defined command types are accepted — no arbitrary execution
 - All gestures and actions are logged
 - Foreground service ensures the connection stays alive
 

@@ -97,6 +97,14 @@ rl.on('line', (line) => {
     'get_ui_tree':'{"id":"5","type":"get_ui_tree"}',
     'click_text': '{"id":"6","type":"click_text","text":"Search"}',
     'click_desc': '{"id":"7","type":"click_description","description":"Search"}',
+    'type':       '{"id":"8","type":"type","text":"hello"}',
+    'wait':       '{"id":"9","type":"wait","ms":2000}',
+    'long_press': '{"id":"10","type":"long_press","x":500,"y":1000}',
+    'recent':     '{"id":"11","type":"keyevent","key":3}',
+    'notif':      '{"id":"11","type":"keyevent","key":4}',
+    'screenshot': '{"id":"11","type":"keyevent","key":10}',
+    'lock':       '{"id":"11","type":"keyevent","key":9}',
+    'state':      '{"id":"12","type":"get_state"}',
   };
 
   if (shortcuts[trimmed.toLowerCase()]) {

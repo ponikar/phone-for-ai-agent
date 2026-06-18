@@ -8,5 +8,7 @@ data class CommandResponse(
     val ok: Boolean,
     val message: String? = null,
     val error: String? = null,
-    val nodes: List<UiNode>? = null
+    val nodes: List<UiNode>? = null,
+    val image: String? = null,
+    val state: Map<String, String>? = null
 )

@@ -8,7 +8,8 @@ object CommandParser {
     private val json = Json { ignoreUnknownKeys = true }
 
     private val VALID_TYPES = setOf(
-        "tap", "swipe", "back", "home", "get_ui_tree", "click_text", "click_description"
+        "tap", "swipe", "back", "home", "get_ui_tree", "click_text", "click_description",
+        "type", "wait", "long_press", "keyevent", "get_state"
     )
 
     fun parse(raw: String): Result<CommandWrapper> = runCatching {
@@ -33,6 +34,13 @@ object CommandParser {
             }
             "click_text" -> require(!cmd.text.isNullOrBlank()) { "click_text requires text" }
             "click_description" -> require(!cmd.description.isNullOrBlank()) { "click_description requires description" }
+            "type" -> require(!cmd.text.isNullOrBlank()) { "type requires text" }
+            "wait" -> require(cmd.ms != null && cmd.ms > 0) { "wait requires positive ms" }
+            "long_press" -> {
+                require(cmd.x != null) { "long_press requires x" }
+                require(cmd.y != null) { "long_press requires y" }
+            }
+            "keyevent" -> require(cmd.key != null) { "keyevent requires key" }
             else -> { }
         }
     }

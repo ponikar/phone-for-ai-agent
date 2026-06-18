@@ -11,7 +11,9 @@ cd server && npm start
 # Send command (port 8081 on same laptop)
 node server/send.js '{"id":"1","type":"get_ui_tree"}'
 
-# Available types: tap, swipe, back, home, get_ui_tree, click_text, click_description
+# Available types:
+#   tap, swipe, back, home, get_ui_tree, click_text, click_description
+#   type, wait, long_press, keyevent, get_state
 ```
 
 ## How Connection Works
@@ -38,19 +40,19 @@ The communication happens over **local WiFi only** using the laptop's **local IP
 
 Both devices must be on the same WiFi. The phone cannot reach `localhost` or `127.0.0.1` on your laptop. Public IPs won't work for local WiFi connections.
 
+## Typical Workflow
+
+1. `get_ui_tree` → see what's on screen
+2. `click_text "YouTube"` or `click_description "Search"`
+3. `type "query"` → type into focused field
+4. `wait 2000` → let animations settle
+5. `get_ui_tree` → see results
+6. `tap` or `click_text` → select target
+7. Repeat
+
 ## Key Files
 
 - `AI_SKILL.md` — Full skill documentation (read this first)
 - `server/server.js` — WebSocket server (port 8080 phone, 8081 commands)
 - `server/send.js` — Command helper script
 - `app/` — Android app source code
-
-## Workflow
-
-1. Find laptop IP → `ifconfig | grep "inet " | grep -v 127.0.0.1`
-2. Start server → `cd server && npm start`
-3. Phone connects to `ws://<IP>:8080` via the app
-4. `get_ui_tree` to see what's on screen
-5. Send tap/swipe/click commands based on UI tree
-6. `get_ui_tree` again to verify the result
-7. Repeat
