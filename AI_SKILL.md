@@ -6,7 +6,7 @@ This skill teaches an AI agent how to control an Android phone using the PhoneCo
 
 - PhoneController APK installed on the Android device
 - Accessibility Service enabled for PhoneController
-- Phone and laptop on the same WiFi network
+- Phone and laptop on the **same WiFi network** (this is essential)
 - Node.js installed on the laptop
 
 ---
@@ -27,14 +27,55 @@ The phone must be connected to port 8080 before any commands work. The server lo
 
 ---
 
-## 2. Connect the Phone
+## 2. Network Setup: Finding the IP Address
 
-Open the PhoneController app on the phone, enter:
-```
-ws://<LAPTOP_IP>:8080
+The laptop runs a WebSocket server. The phone connects to it over your local WiFi. This means you need the laptop's **local IP address** on the WiFi network — NOT a public IP, NOT 127.0.0.1.
+
+### How to find the laptop's local IP
+
+**macOS / Linux:**
+```bash
+# Look for the IP next to "inet" — usually starts with 192.168., 10., or 172.
+ifconfig | grep "inet " | grep -v 127.0.0.1
+
+# Example output:  inet 192.168.1.102 netmask 0xffffff00 broadcast 192.168.1.255
+# Your IP is: 192.168.1.102
 ```
 
-Find your laptop IP with `ifconfig | grep inet`. Tap **Connect**. The status should show green "Connected".
+**Windows (PowerShell):**
+```powershell
+ipconfig | findstr /i "IPv4"
+```
+
+### How to connect the phone
+
+1. Open the **PhoneController** app on your phone
+2. Tap the URL input field at the top
+3. Type: `ws://192.168.1.102:8080` (replace with *your* laptop IP)
+4. Tap **Connect** button
+
+The status indicator should turn **green** and show "Connected". The server terminal will print:
+```
+  Phone connected from 192.168.1.104
+```
+
+### Troubleshooting connection issues
+
+| Problem | Likely fix |
+|---|---|
+| Phone can't connect | Both devices must be on **the same WiFi network** |
+| Connection times out | Check laptop firewall — port 8080 needs to be open |
+| "Connection failed" on phone | Make sure the server is running first (`npm start`) |
+| IP keeps changing | Set a static IP on your laptop, or check IP each session |
+| Using mobile hotspot | Hotspot creates its own network. Phone and laptop should both be on it. Find the laptop's IP from `ifconfig` while connected to the hotspot |
+
+### Important networking notes
+
+- **Local IPs** (192.168.x.x, 10.x.x.x, 172.16-31.x.x) only work within your home/office WiFi
+- **Do not use 127.0.0.1 or localhost** — the phone can't reach those from another device
+- **Do not use your public IP** — that's your router's internet address, and the phone is inside your network
+- IP addresses can change when you restart your laptop or reconnect to WiFi. Always re-check with `ifconfig` before starting a session
+- The protocol is `ws://` (not `wss://`). The app has cleartext traffic enabled for local network use
 
 ---
 
